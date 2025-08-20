@@ -74,6 +74,7 @@
   "dependencies": {
     "@xixiyahaha/rembg-node": "^2.2.0",
     "fastify": "^5.5.0",
+    "onnxruntime-node": "^1.22.0",
     "sharp": "^0.34.3"
   },
   "devDependencies": {
