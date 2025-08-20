@@ -14,14 +14,22 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
 
+      - name: Configure npm for onnxruntime-node (CPU only)
+        run: |
+          npm config set onnxruntime_node_prebuilt false
+          npm config set onnxruntime_node_cpu true
+
       - name: Install dependencies
         run: npm ci
+
+      - name: Rebuild onnxruntime-node from source (fallback, optional)
+        run: npm rebuild onnxruntime-node --build-from-source || true
 
       - name: Run ESLint
         run: npm run lint
