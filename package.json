@@ -96,8 +96,5 @@
     "typescript": "^5.9.2",
     "typescript-eslint": "^8.40.0",
     "vitest": "^3.2.4"
-  },
-  "resolutions": {
-    "onnxruntime-node": "1.20.0"
   }
 }

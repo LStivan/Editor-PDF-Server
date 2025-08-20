@@ -1,4 +1,4 @@
-name: Test & Coverage
+name: CI/CD Pipeline
 
 on:
   push:
@@ -7,10 +7,9 @@ on:
     branches: [main]
 
 jobs:
-  test:
-    name: Run tests and collect coverage
+  test-and-coverage:
+    name: Run tests & collect coverage
     runs-on: ubuntu-latest
-
     services:
       postgres:
         image: postgres:17.5-alpine
@@ -33,16 +32,16 @@ jobs:
           --health-retries=5
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
         with:
           fetch-depth: 2
 
-      - name: Set up Node.js 24
+      - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
+          cache: 'npm'
 
       - name: Configure environment for onnxruntime-node (CPU only)
         run: |
@@ -52,27 +51,53 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Ajustar variáveis de ambiente para CI
+      - name: Set CI environment variables
         run: |
           echo "POSTGRES_PORT=5432" >> $GITHUB_ENV
           echo "REDIS_PORT=6379" >> $GITHUB_ENV
+          echo "NODE_ENV=test" >> $GITHUB_ENV
 
-      - name: Run migrations
+      - name: Run Prisma migrations
         run: |
-          npx dotenvx run -f .env.test -- npx prisma generate
-          npx dotenvx run -f .env.test -- npx prisma migrate deploy
-        env:
-          NODE_ENV: test
+          npx prisma generate
+          npx prisma migrate deploy
 
-      - name: Run tests with coverage (lcov)
+      - name: Run tests with coverage
         run: npx vitest run --coverage --coverage.reporter=lcov
-        env:
-          NODE_ENV: test
 
-      - name: Upload results to Codecov
+      - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          slug: Stivan-Lucas/Omni-Chat-Real-Time
           files: ./coverage/lcov.info
           fail_ci_if_error: true
+
+  lint-and-prettier:
+    name: Lint & Prettier check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - name: Configure environment for onnxruntime-node (CPU only)
+        run: |
+          echo "ONNXRUNTIME_NODE_PREBUILT=false" >> $GITHUB_ENV
+          echo "ONNXRUNTIME_NODE_CPU=true" >> $GITHUB_ENV
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Rebuild onnxruntime-node
+        run: npm rebuild onnxruntime-node --build-from-source || true
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Run Prettier check
+        run: npm run format:check
