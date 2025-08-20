@@ -18,8 +18,6 @@ jobs:
           POSTGRES_USER: dev_user
           POSTGRES_PASSWORD: dev_password
           POSTGRES_DB: omni_test
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd="pg_isready -U dev_user -d omni_test"
           --health-interval=10s
@@ -28,8 +26,6 @@ jobs:
 
       redis:
         image: redis:7-alpine
-        ports:
-          - 6379:6379
         options: >-
           --health-cmd="redis-cli ping || exit 1"
           --health-interval=10s
@@ -48,18 +44,18 @@ jobs:
           node-version: 24
           cache: npm
 
-      - name: Configure onnxruntime-node for CPU-only
+      - name: Configure environment for onnxruntime-node (CPU only)
         run: |
-          npm config set onnxruntime_node_prebuilt false
-          npm config set onnxruntime_node_cpu true
+          echo "ONNXRUNTIME_NODE_PREBUILT=false" >> $GITHUB_ENV
+          echo "ONNXRUNTIME_NODE_CPU=true" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Ajustar .env.test para o ambiente CI
+      - name: Ajustar variáveis de ambiente para CI
         run: |
-          sed -i 's/POSTGRES_PORT=33337/POSTGRES_PORT=5432/' .env.test
-          sed -i 's/REDIS_PORT=33338/REDIS_PORT=6379/' .env.test
+          echo "POSTGRES_PORT=5432" >> $GITHUB_ENV
+          echo "REDIS_PORT=6379" >> $GITHUB_ENV
 
       - name: Run migrations
         run: |
